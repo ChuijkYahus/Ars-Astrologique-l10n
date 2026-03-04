@@ -1,0 +1,48 @@
+{
+  "ars_astrologique.glyph_desc.glyph_alacrity": "Grants increased overall speed to the target. Beware the lethargic backlash once the spell ends.",
+  "ars_astrologique.glyph_desc.glyph_bless": "Grants increasing healing to the target for the duration.",
+  "ars_astrologique.glyph_desc.glyph_empower": "Grants increased physical strength for melee attacks and jumping power to the target.",
+  "ars_astrologique.glyph_desc.glyph_false_life": "Grants faux vitality to the target for a short duration.",
+  "ars_astrologique.glyph_desc.glyph_invigorate": "Passively recovers target's hunger and saturation.",
+  "ars_astrologique.glyph_desc.glyph_stalwart": "Turns the target into an immovable guardian. Grants increased damage and knockback reduction at the cost of slower movement speed.",
+
+  "ars_astrologique.glyph_name.glyph_alacrity": "Alacrity",
+  "ars_astrologique.glyph_name.glyph_bless": "Bless",
+  "ars_astrologique.glyph_name.glyph_empower": "Empower",
+  "ars_astrologique.glyph_name.glyph_false_life": "False Life",
+  "ars_astrologique.glyph_name.glyph_invigorate": "Invigorate",
+  "ars_astrologique.glyph_name.glyph_stalwart": "Stalwart",
+
+  "ars_nouveau.augment_desc.glyph_alacrity_glyph_amplify": "Increases overall speed at the cost of a harsher backlash when the spell ends.",
+  "ars_nouveau.augment_desc.glyph_alacrity_glyph_duration_down": "Decreases the duration.",
+  "ars_nouveau.augment_desc.glyph_alacrity_glyph_extend_time": "Increases the duration.",
+
+  "ars_nouveau.augment_desc.glyph_bless_glyph_amplify": "Amplifies incoming healing to the target.",
+  "ars_nouveau.augment_desc.glyph_bless_glyph_duration_down": "Decreases the duration.",
+  "ars_nouveau.augment_desc.glyph_bless_glyph_extend_time": "Increases the duration.",
+
+  "ars_nouveau.augment_desc.glyph_empower_glyph_amplify": "Increases melee damage, knockback, and jumping strength.",
+  "ars_nouveau.augment_desc.glyph_empower_glyph_duration_down": "Decreases the duration.",
+  "ars_nouveau.augment_desc.glyph_empower_glyph_extend_time": "Increases the duration.",
+
+  "ars_nouveau.augment_desc.glyph_false_life_glyph_amplify": "Increases the amount of temporary health granted.",
+  "ars_nouveau.augment_desc.glyph_false_life_glyph_duration_down": "Decreases the duration.",
+  "ars_nouveau.augment_desc.glyph_false_life_glyph_extend_time": "Increases the duration.",
+
+  "ars_nouveau.augment_desc.glyph_invigorate_glyph_amplify": "Amplifies the target's passive hunger and saturation recovery.",
+  "ars_nouveau.augment_desc.glyph_invigorate_glyph_duration_down": "Decreases the duration.",
+  "ars_nouveau.augment_desc.glyph_invigorate_glyph_extend_time": "Increases the duration.",
+
+  "ars_nouveau.augment_desc.glyph_stalwart_glyph_amplify": "Increases damage and knockback resistance at the cost of even slower movement.",
+  "ars_nouveau.augment_desc.glyph_stalwart_glyph_duration_down": "Decreases the duration.",
+  "ars_nouveau.augment_desc.glyph_stalwart_glyph_extend_time": "Increases the duration.",
+
+  "creativetab.ars_astrologique.ars_astrologique": "Ars Astrologique",
+
+  "effect.ars_astrologique.alacrity": "Alacrity",
+  "effect.ars_astrologique.bless": "Bless",
+  "effect.ars_astrologique.empower": "Empowered",
+  "effect.ars_astrologique.invigorate": "Invigorate",
+  "effect.ars_astrologique.stalwart": "Stalwart",
+  "entity.ars_astrologique.enchanter": "Enchanter"
+}
