@@ -22,7 +22,8 @@ public class AstroDataGen {
         CompletableFuture<HolderLookup.Provider> lookupProvider = event.getLookupProvider();
 
         generator.addProvider(event.includeClient(), new AstroItemModelProvider(packOutput, existingFileHelper));
-        generator.addProvider(event.includeServer(), new AstroRecipeProvider(packOutput, lookupProvider));
+        generator.addProvider(event.includeServer(), new AstroApparatusProvider(generator));
         generator.addProvider(event.includeServer(), new AstroGlyphRecipeProvider(generator));
+        generator.addProvider(event.includeServer(), new AstroWorldgenProvider(packOutput, lookupProvider));
     }
 }

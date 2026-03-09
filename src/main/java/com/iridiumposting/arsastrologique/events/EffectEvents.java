@@ -1,7 +1,7 @@
 package com.iridiumposting.arsastrologique.events;
 
 import com.iridiumposting.arsastrologique.ArsAstrologique;
-import com.iridiumposting.arsastrologique.setup.registry.AstroEffectRegistry;
+import com.iridiumposting.arsastrologique.setup.registry.AstroEffects;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
@@ -19,7 +19,7 @@ public class EffectEvents{
         LivingEntity entity = event.getEntity();
         MobEffectInstance effect = event.getEffectInstance();
 
-        if(effect != null && effect.getEffect().equals(AstroEffectRegistry.ALACRITY_EFFECT)) {
+        if(effect != null && effect.getEffect().equals(AstroEffects.ALACRITY_EFFECT)) {
             entity.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 120, effect.getAmplifier()+2));
             entity.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN,120, effect.getAmplifier()+2));
         }
@@ -30,8 +30,8 @@ public class EffectEvents{
         LivingEntity entity = event.getEntity();
         var damage = event.getContainer().getOriginalDamage();
 
-        if(entity.hasEffect(AstroEffectRegistry.STALWART_EFFECT)) {
-            float amp = entity.getEffect(AstroEffectRegistry.STALWART_EFFECT).getAmplifier();
+        if(entity.hasEffect(AstroEffects.STALWART_EFFECT)) {
+            float amp = entity.getEffect(AstroEffects.STALWART_EFFECT).getAmplifier();
             if (damage > 0.5 && amp > 0) damage *= 1.0F - 0.2F*(amp+1);
         }
         event.getContainer().setNewDamage(damage);
@@ -42,8 +42,8 @@ public class EffectEvents{
         LivingEntity entity = event.getEntity();
         var healing = event.getAmount();
 
-        if(entity.hasEffect(AstroEffectRegistry.BLESS_EFFECT)) {
-            float amp = entity.getEffect(AstroEffectRegistry.BLESS_EFFECT).getAmplifier();
+        if(entity.hasEffect(AstroEffects.BLESS_EFFECT)) {
+            float amp = entity.getEffect(AstroEffects.BLESS_EFFECT).getAmplifier();
             if (healing > 0.5 && amp > 0) healing *= (1.0F + 0.2F*amp);
         }
         event.setAmount(healing);

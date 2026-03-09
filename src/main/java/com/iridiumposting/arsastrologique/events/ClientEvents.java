@@ -2,7 +2,7 @@ package com.iridiumposting.arsastrologique.events;
 
 import com.iridiumposting.arsastrologique.ArsAstrologique;
 import com.iridiumposting.arsastrologique.client.renderer.EnchanterRenderer;
-import com.iridiumposting.arsastrologique.setup.registry.AstroEntityRegistry;
+import com.iridiumposting.arsastrologique.setup.registry.AstroEntities;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -13,7 +13,7 @@ public class ClientEvents {
 
     @SubscribeEvent
     public static void bindRenderers(final EntityRenderersEvent.RegisterRenderers event) {
-        event.registerEntityRenderer(AstroEntityRegistry.ENCHANTER_ENTITY.get(), EnchanterRenderer::new);
+        event.registerEntityRenderer(AstroEntities.ENCHANTER_ENTITY.get(), EnchanterRenderer::new);
     }
 
 }

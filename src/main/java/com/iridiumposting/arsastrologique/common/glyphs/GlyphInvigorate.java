@@ -4,7 +4,7 @@ import com.hollingsworth.arsnouveau.api.spell.*;
 import com.hollingsworth.arsnouveau.common.spell.augment.AugmentAmplify;
 import com.hollingsworth.arsnouveau.common.spell.augment.AugmentDurationDown;
 import com.hollingsworth.arsnouveau.common.spell.augment.AugmentExtendTime;
-import com.iridiumposting.arsastrologique.setup.registry.AstroEffectRegistry;
+import com.iridiumposting.arsastrologique.setup.registry.AstroEffects;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
@@ -26,7 +26,7 @@ public class GlyphInvigorate extends AbstractEffect implements IPotionEffect {
 
     @Override
     public void onResolveEntity(EntityHitResult rayTraceResult, Level world, @NotNull LivingEntity shooter, SpellStats spellStats, SpellContext spellContext, SpellResolver resolver) {
-        if(rayTraceResult.getEntity() instanceof LivingEntity living) this.applyConfigPotion(living, AstroEffectRegistry.INVIGORATE_EFFECT, spellStats, true);
+        if(rayTraceResult.getEntity() instanceof LivingEntity living) this.applyConfigPotion(living, AstroEffects.INVIGORATE_EFFECT, spellStats, true);
     }
 
     @Override

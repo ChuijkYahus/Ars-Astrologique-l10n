@@ -33,7 +33,7 @@ public class EnchanterModel extends GeoModel<EnchanterEntity> {
     @Override
     public void setCustomAnimations(EnchanterEntity animatable, long instanceId, AnimationState<EnchanterEntity> animationState) {
         super.setCustomAnimations(animatable, instanceId, animationState);
-        if(animationState == null || animatable.getEntityData().get(EnchanterEntity.EATING)) return;
+        if(animationState == null || animatable.getEntityData().get(EnchanterEntity.EATING) || animatable.getEntityData().get(EnchanterEntity.BEING_TAMED)) return;
 
         GeoBone head = getAnimationProcessor().getBone("main");
         EntityModelData entityData = animationState.getData(DataTickets.ENTITY_MODEL_DATA);

@@ -1,6 +1,15 @@
 package com.iridiumposting.arsastrologique.common.entity;
 
+import com.hollingsworth.arsnouveau.api.entity.IDispellable;
+import com.hollingsworth.arsnouveau.client.particle.ParticleColor;
+import com.hollingsworth.arsnouveau.client.particle.ParticleUtil;
+import com.hollingsworth.arsnouveau.common.advancement.ANCriteriaTriggers;
+import com.hollingsworth.arsnouveau.common.items.data.ICharmSerializable;
+import com.hollingsworth.arsnouveau.common.items.data.PersistentFamiliarData;
+import com.hollingsworth.arsnouveau.common.network.Networking;
+import com.hollingsworth.arsnouveau.common.network.PacketANEffect;
 import com.hollingsworth.arsnouveau.setup.registry.BlockRegistry;
+import com.hollingsworth.arsnouveau.setup.registry.DataComponentRegistry;
 import com.hollingsworth.arsnouveau.setup.registry.ItemsRegistry;
 
 import com.iridiumposting.arsastrologique.ArsAstrologique;
@@ -11,6 +20,10 @@ import com.iridiumposting.arsastrologique.common.entity.ai.goal.LookAtCustomerGo
 import com.iridiumposting.arsastrologique.common.entity.ai.goal.TradeWithPlayerGoal;
 import com.iridiumposting.arsastrologique.common.entity.trades.TradeOffers;
 
+import com.iridiumposting.arsastrologique.setup.registry.AstroDataComponents;
+import com.iridiumposting.arsastrologique.setup.registry.AstroEntities;
+import com.iridiumposting.arsastrologique.setup.registry.AstroItems;
+import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.Util;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
@@ -19,15 +32,19 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
 
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
 
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.*;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.npc.Npc;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -44,14 +61,32 @@ import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.*;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
-public class EnchanterEntity extends PathfinderMob implements GeoEntity, Merchant, Npc {
+import javax.annotation.ParametersAreNonnullByDefault;
+
+public class EnchanterEntity extends AbstractCasterEntity implements GeoEntity, Merchant, Npc, IDispellable, ICharmSerializable {
+
+    private @Nullable Player customer;
+    public @Nullable MerchantOffers offers;
+    private long lastRestockGameTime;
+    private long lastRestockCheckDayTime;
+    private int numberOfRestocksToday;
+    int tamingTime;
+
+    protected static final RawAnimation IDLE = RawAnimation.begin().thenLoop("animation.enchanter.idle");
+    protected static final RawAnimation WALK = RawAnimation.begin().thenLoop("animation.enchanter.walk");
+    protected static final RawAnimation EAT = RawAnimation.begin().thenPlay("animation.enchanter.eat");
+    protected static final RawAnimation INSPECT = RawAnimation.begin().thenPlay("animation.enchanter.inspect");
+
+    private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
 
     public EnchanterEntity(EntityType<? extends PathfinderMob> entityType, Level world) {
         super(entityType, world);
     }
 
-    private @Nullable Player customer;
-    public @Nullable MerchantOffers offers;
+    public EnchanterEntity(Level world, boolean tamed) {
+        this(AstroEntities.ENCHANTER_ENTITY.get(), world);
+        setTamed(tamed);
+    }
 
     public static AttributeSupplier createAttributes() {
         return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 14.0D)
@@ -75,12 +110,29 @@ public class EnchanterEntity extends PathfinderMob implements GeoEntity, Merchan
     }
 
     @Override
+    public void tick() {
+        super.tick();
+        if (!isTamed() && this.entityData.get(BEING_TAMED)) {
+            triggerAnim("Controller", "Inspect");
+            tamingTime++;
+            if (tamingTime % 20 == 0 && !level().isClientSide())
+                Networking.sendToNearbyClient(level(), this, new PacketANEffect(PacketANEffect.EffectType.TIMED_HELIX, blockPosition(), ParticleColor.ORANGE));
+
+            if (tamingTime > 60 && !level().isClientSide) {
+                dropShard();
+                ANCriteriaTriggers.rewardNearbyPlayers(ANCriteriaTriggers.POOF_MOB.get(), (ServerLevel) this.level(), this.getOnPos(), 10);
+                ParticleUtil.spawnPoof((ServerLevel) level(), blockPosition());
+                this.remove(RemovalReason.DISCARDED);
+                level().playSound(null, getX(), getY(), getZ(), SoundEvents.ILLUSIONER_MIRROR_MOVE, SoundSource.NEUTRAL, 1f, 1f);
+            }
+        }
+    }
+
+    @Override
     public void aiStep() {
         super.aiStep();
-        if(!this.level().isClientSide){
-            if(this.shouldRestock())
-                this.restock();
-        }
+        if(!this.level().isClientSide() && this.shouldRestock())
+            this.restock();
     }
 
     /* TEXTURES, MODELS & ANIMATIONS */
@@ -89,20 +141,16 @@ public class EnchanterEntity extends PathfinderMob implements GeoEntity, Merchan
         return ArsAstrologique.prefix("textures/entity/enchanter.png");
     }
 
-    protected static final RawAnimation IDLE = RawAnimation.begin().thenLoop("animation.enchanter.idle");
-    protected static final RawAnimation WALK = RawAnimation.begin().thenLoop("animation.enchanter.walk");
-    protected static final RawAnimation EAT = RawAnimation.begin().thenPlay("animation.enchanter.eat");
-
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new AnimationController<>(this, "Controller", 0,
                 state -> state.isMoving()
                         ? state.setAndContinue(WALK)
                         : state.setAndContinue(IDLE)
         )
-                .triggerableAnim("Eat", EAT));
+                .triggerableAnim("Eat", EAT)
+                .triggerableAnim("Inspect", INSPECT)
+        );
     }
-
-    private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
 
     @Override
     public AnimatableInstanceCache getAnimatableInstanceCache() {
@@ -112,19 +160,30 @@ public class EnchanterEntity extends PathfinderMob implements GeoEntity, Merchan
     /* INTERACTION */
 
     @Override
-    public @NotNull InteractionResult mobInteract(Player player, @NotNull InteractionHand hand) {
+    @ParametersAreNonnullByDefault
+    public @NotNull InteractionResult mobInteract(Player player, InteractionHand hand) {
+        if(level().isClientSide() || hand != InteractionHand.MAIN_HAND) return InteractionResult.SUCCESS;
+
         ItemStack stack = player.getItemInHand(hand);
 
-        if(canEat(stack)) {
-            if (this.getItemBySlot(EquipmentSlot.MAINHAND).isEmpty()) {
+        if(!isTamed()){
+            if(stack.is(ItemsRegistry.BLANK_PARCHMENT.asItem())){
                 this.setHeldStack(player.hasInfiniteMaterials() ? stack.copyWithCount(1) : stack.split(1));
+                this.entityData.set(BEING_TAMED, true);
                 return InteractionResult.SUCCESS;
-            } else return InteractionResult.PASS;
-        } else if(this.isAlive() && !this.isTrading()) {
-            if(this.getOffers().isEmpty()) return InteractionResult.PASS;
-            if(!this.isClientSide() && !this.offers.isEmpty())
-                this.startTrading(player);
-            return InteractionResult.SUCCESS;
+            }
+        } else{
+            if(canEat(stack)) {
+                if(this.getItemBySlot(EquipmentSlot.MAINHAND).isEmpty()){
+                    this.setHeldStack(player.hasInfiniteMaterials() ? stack.copyWithCount(1) : stack.split(1));
+                    return InteractionResult.SUCCESS;
+                } else return InteractionResult.PASS;
+            }
+            else if(this.isAlive() && !this.isTrading()) {
+                if(this.getOffers().isEmpty()) return InteractionResult.PASS;
+                else this.startTrading(player);
+                return InteractionResult.SUCCESS;
+            }
         }
         return InteractionResult.PASS;
     }
@@ -136,18 +195,24 @@ public class EnchanterEntity extends PathfinderMob implements GeoEntity, Merchan
     /* DATA */
 
     public static final EntityDataAccessor<Boolean> EATING = SynchedEntityData.defineId(EnchanterEntity.class, EntityDataSerializers.BOOLEAN);
+    public static final EntityDataAccessor<Boolean> TAMED = SynchedEntityData.defineId(EnchanterEntity.class, EntityDataSerializers.BOOLEAN);
+    public static final EntityDataAccessor<Boolean> BEING_TAMED = SynchedEntityData.defineId(EnchanterEntity.class, EntityDataSerializers.BOOLEAN);
 
     @Override
     protected void defineSynchedData(SynchedEntityData.@NotNull Builder builder) {
         super.defineSynchedData(builder);
         builder.define(EATING, false);
+        builder.define(TAMED, false);
+        builder.define(BEING_TAMED, false);
     }
 
     public void addAdditionalSaveData(@NotNull CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.putBoolean("Eating", this.entityData.get(EATING));
+        tag.putBoolean("Tamed", this.entityData.get(TAMED));
+        tag.putBoolean("beingTamed", this.entityData.get(BEING_TAMED));
 
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             MerchantOffers offers = this.getOffers();
             if (!offers.isEmpty()) {
                 tag.put("Offers", MerchantOffers.CODEC
@@ -158,9 +223,12 @@ public class EnchanterEntity extends PathfinderMob implements GeoEntity, Merchan
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         this.entityData.set(EATING, tag.getBoolean("Eating"));
+        this.entityData.set(BEING_TAMED, tag.getBoolean("beingTamed"));
+        setTamed(tag.getBoolean("Tamed"));
 
         if (tag.contains("Offers", CompoundTag.TAG_COMPOUND)) {
             MerchantOffers.CODEC
@@ -182,8 +250,13 @@ public class EnchanterEntity extends PathfinderMob implements GeoEntity, Merchan
         return this.customer;
     }
 
+    public void setOffers(ItemStack stack, MerchantOffers offers){
+        stack.set(AstroDataComponents.ENCHANTER_TRADES, offers);
+    }
+
     @Override
-    public @Nullable MerchantOffers getOffers() {
+    @MethodsReturnNonnullByDefault
+    public MerchantOffers getOffers() {
         if(this.offers == null){
             reloadOffers();
         }
@@ -191,6 +264,7 @@ public class EnchanterEntity extends PathfinderMob implements GeoEntity, Merchan
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     public void overrideOffers(MerchantOffers merchantOffers) { }
 
     @Override
@@ -210,8 +284,9 @@ public class EnchanterEntity extends PathfinderMob implements GeoEntity, Merchan
     }
 
     @Override
+    @ParametersAreNonnullByDefault
     public void notifyTradeUpdated(ItemStack itemStack) {
-        if(!this.level().isClientSide && this.ambientSoundTime > -this.getAmbientSoundInterval() + 20)
+        if(!this.level().isClientSide() && this.ambientSoundTime > -this.getAmbientSoundInterval() + 20)
             this.ambientSoundTime = -this.getAmbientSoundInterval();
     }
 
@@ -236,6 +311,8 @@ public class EnchanterEntity extends PathfinderMob implements GeoEntity, Merchan
             merchantOffer.resetUses();
         }
         this.resendOffers();
+        this.lastRestockGameTime = level().getGameTime();
+        ++this.numberOfRestocksToday;
     }
 
     private void resendOffers() {
@@ -246,13 +323,63 @@ public class EnchanterEntity extends PathfinderMob implements GeoEntity, Merchan
     }
 
     public boolean shouldRestock() {
-        return (this.tickCount % 60 == 0);
+        long i = this.lastRestockGameTime + 12000L;
+        long j = this.level().getGameTime();
+        boolean flag = j > i;
+        long k = this.level().getDayTime();
+        if (this.lastRestockCheckDayTime > 0L) {
+            long l = this.lastRestockCheckDayTime / 24000L;
+            long i1 = k / 24000L;
+            flag |= i1 > l;
+        }
+
+        this.lastRestockCheckDayTime = k;
+        if (flag) {
+            this.lastRestockGameTime = j;
+            this.resetNumberOfRestocks();
+        }
+
+        return this.allowedToRestock() && this.needsToRestock();
+    }
+
+    private boolean allowedToRestock() {
+        return this.numberOfRestocksToday == 0 || this.numberOfRestocksToday < 3 && this.level().getGameTime() > this.lastRestockGameTime + 2400L;
+    }
+
+    private boolean needsToRestock() {
+        for(MerchantOffer merchantoffer : this.getOffers()) {
+            if (merchantoffer.needsRestock()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void resetNumberOfRestocks() {
+        this.catchUpDemand();
+        this.numberOfRestocksToday = 0;
     }
 
     private void updateDemand() {
         for(MerchantOffer merchantOffer : this.getOffers()) {
             merchantOffer.updateDemand();
         }
+    }
+
+    private void catchUpDemand() {
+        int i = 2 - this.numberOfRestocksToday;
+        if (i > 0) {
+            for(MerchantOffer merchantoffer : this.getOffers()) {
+                merchantoffer.resetUses();
+            }
+        }
+
+        for(int j = 0; j < i; ++j) {
+            this.updateDemand();
+        }
+
+        this.resendOffers();
     }
 
     public boolean isTrading() {
@@ -280,9 +407,54 @@ public class EnchanterEntity extends PathfinderMob implements GeoEntity, Merchan
         return stack.is(ItemsRegistry.SOURCE_BERRY_ROLL.asItem()) || stack.is(BlockRegistry.SOURCEBERRY_BUSH.asItem()) || stack.is(BlockRegistry.BASTION_POD.asItem());
     }
 
-    public void eatSnack() {
-        this.playSound(SoundEvents.GENERIC_EAT, 1.0F, 1.0F+random.nextFloat()*0.125F);
-        this.triggerAnim("Controller", "Eat");
+    /* CHARM & DISPEL */
+
+    @Override
+    public void fromCharmData(PersistentFamiliarData data) {
+        this.setCustomName(data.name());
     }
 
+    @Override
+    public boolean onDispel(@Nullable LivingEntity caster) {
+        if(this.isRemoved() || level().isClientSide()) return false;
+
+        if(this.isTamed()){
+            dropData();
+            ParticleUtil.spawnPoof((ServerLevel) level(), blockPosition());
+            this.remove(RemovalReason.DISCARDED);
+        }
+
+        return this.isTamed();
+    }
+
+    @Override
+    @ParametersAreNonnullByDefault
+    protected void dropCustomDeathLoot(ServerLevel level, DamageSource damageSource, boolean recentlyHit) {
+        super.dropCustomDeathLoot(level, damageSource, recentlyHit);
+        if (!level.isClientSide() && this.isTamed()) {
+            dropData();
+        }
+    }
+
+    private boolean isTamed() {
+        return this.entityData.get(TAMED);
+    }
+
+    private void setTamed(boolean tamed) {
+        this.entityData.set(TAMED, tamed);
+    }
+
+    public void dropData(){
+        ItemStack charm = new ItemStack(AstroItems.ENCHANTER_CHARM.get());
+        charm.set(DataComponentRegistry.PERSISTENT_FAMILIAR_DATA, new PersistentFamiliarData().setName(getCustomName()));
+        setOffers(charm, this.getOffers());
+        level().addFreshEntity(new ItemEntity(level(), getX(), getY(), getZ(), charm));
+    }
+
+    public void dropShard(){
+        ItemStack shard = new ItemStack(AstroItems.ENCHANTER_SHARD.get());
+        shard.set(DataComponentRegistry.PERSISTENT_FAMILIAR_DATA, new PersistentFamiliarData().setName(getCustomName()));
+        setOffers(shard, this.getOffers());
+        level().addFreshEntity(new ItemEntity(level(), getX(), getY(), getZ(), shard));
+    }
 }

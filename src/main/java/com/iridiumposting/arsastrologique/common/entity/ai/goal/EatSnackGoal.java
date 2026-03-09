@@ -3,6 +3,7 @@ package com.iridiumposting.arsastrologique.common.entity.ai.goal;
 import com.hollingsworth.arsnouveau.setup.registry.BlockRegistry;
 import com.hollingsworth.arsnouveau.setup.registry.ItemsRegistry;
 import com.iridiumposting.arsastrologique.common.entity.EnchanterEntity;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.ai.goal.Goal;
 
 import java.util.EnumSet;
@@ -31,14 +32,15 @@ public class EatSnackGoal extends Goal {
     @Override
     public void start() {
         this.enchanter.getNavigation().stop();
-        this.tick = 20;
+        this.tick = 16;
         this.enchanter.getEntityData().set(EnchanterEntity.EATING, true);
     }
 
     @Override
     public void tick() {
         super.tick();
-        this.enchanter.eatSnack();
+        this.enchanter.triggerAnim("Controller", "Eat");
+        if(tick % 2 == 0) this.enchanter.playSound(SoundEvents.GENERIC_EAT);
         this.tick--;
     }
 
@@ -46,6 +48,7 @@ public class EatSnackGoal extends Goal {
     public void stop() {
         this.enchanter.getMainHandItem().shrink(1);
         this.enchanter.reloadOffers();
+        this.enchanter.resetNumberOfRestocks();
         this.enchanter.getEntityData().set(EnchanterEntity.EATING, false);
     }
 }

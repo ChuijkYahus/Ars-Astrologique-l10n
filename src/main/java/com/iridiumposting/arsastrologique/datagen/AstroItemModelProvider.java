@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.hollingsworth.arsnouveau.api.registry.GlyphRegistry;
 import com.hollingsworth.arsnouveau.common.items.Glyph;
 import com.iridiumposting.arsastrologique.ArsAstrologique;
-import com.iridiumposting.arsastrologique.setup.registry.AstroItemRegistry;
+import com.iridiumposting.arsastrologique.setup.registry.AstroItems;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -24,7 +24,9 @@ public class AstroItemModelProvider extends ItemModelProvider {
     @Override
     protected void registerModels() {
 
-        spawnEggItem(AstroItemRegistry.ENCHANTER_SPAWN_EGG.get());
+        spawnEggItem(AstroItems.ENCHANTER_SPAWN_EGG.get());
+        basicItem(AstroItems.ENCHANTER_CHARM.get());
+        basicItem(AstroItems.ENCHANTER_SHARD.get());
 
         /* FROM ARS NOUVEAU ITEM MODEL GENERATOR */
         for (Supplier<Glyph> i : GlyphRegistry.getGlyphItemMap().values()) {

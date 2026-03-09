@@ -1,6 +1,6 @@
 package com.iridiumposting.arsastrologique;
 
-import com.iridiumposting.arsastrologique.setup.registry.AstroRegistrySetup;
+import com.iridiumposting.arsastrologique.setup.registry.AstroRegistries;
 import com.iridiumposting.arsastrologique.setup.registry.ArsNouveauRegistry;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
@@ -21,7 +21,7 @@ public class ArsAstrologique {
 
     public ArsAstrologique(IEventBus modEventBus) {
         
-        AstroRegistrySetup.registers(modEventBus);
+        AstroRegistries.registers(modEventBus);
         ArsNouveauRegistry.init();
         
         modEventBus.addListener(this::common);

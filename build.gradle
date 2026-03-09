@@ -33,7 +33,7 @@ neoForge {
 
     parchment {
         mappingsVersion = project.parchment_version
-        minecraftVersion = "1.21"
+        minecraftVersion = "1.21.1"
     }
 
     runs {
@@ -153,7 +153,12 @@ dependencies {
 
     /* HARD DEPENDENCIES */
     implementation("com.hollingsworth.ars_nouveau:ars_nouveau-${minecraft_version}:${ars_version}")
-    implementation ("com.alexthw.sauce:sauce-${minecraft_version}:${sauce_version}") {transitive=false}
+    jarJar(implementation("com.alexthw.sauce:sauce-${minecraft_version}") {
+        version {
+            strictly '[0.0.21.64,)'
+            prefer sauce_version
+        }
+    }) { transitive = false }
 
     /* COMPATS */
     compileOnly "curse.maven:ars-additions-974408:7646325"
@@ -162,9 +167,15 @@ dependencies {
 
     /* BASE ARS DEPENDENCIES */
     compileOnly "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
+    compileOnly "vazkii.patchouli:Patchouli:1.21-${patchouli_version}"
     compileOnly 'com.github.glitchfiend:TerraBlender-neoforge:1.21-4.0.0.0'
     compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    compileOnly "com.hollingsworth.nuggets:nuggets-neoforge-1.21.1:${nuggets_version}"
+
+    /* WORLDGEN DEBUG*/
+//    localRuntime "curse.maven:cyanide-541676:5782674"
+
 }
 
 // Example for how to get properties into the manifest for reading by the runtime..
